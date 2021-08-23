@@ -12,12 +12,7 @@ import (
 func Provider() terraform.ResourceProvider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
-			"uri": {
-				Type:        schema.TypeString,
-				Required:    true,
-				DefaultFunc: schema.EnvDefaultFunc("REST_API_URI", nil),
-				Description: "URI of the REST API endpoint. This serves as the base of all requests.",
-			},
+			
 			"insecure": {
 				Type:        schema.TypeBool,
 				Optional:    true,
@@ -204,7 +199,7 @@ func configureProvider(d *schema.ResourceData) (interface{}, error) {
 	}
 
 	opt := &apiClientOpt{
-		uri:                 d.Get("uri").(string),
+		
 		insecure:            d.Get("insecure").(bool),
 		username:            d.Get("username").(string),
 		password:            d.Get("password").(string),

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -73,9 +72,9 @@ func NewAPIClient(opt *apiClientOpt) (*APIClient, error) {
 		log.Printf("api_client.go: Constructing debug api_client\n")
 	}
 
-	if opt.uri == "" {
-		return nil, errors.New("uri must be set to construct an API client")
-	}
+	// if opt.uri == "" {
+	// 	return nil, errors.New("indah::")
+	// }
 
 	/* Sane default */
 	if opt.idAttribute == "" {
