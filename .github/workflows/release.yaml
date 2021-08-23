@@ -27,30 +27,14 @@ jobs:
 
       - name: Import GPG key
         id: import_gpg
-        env:
-          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
-          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-        run: |
-          mkdir -p ~/.gnupg
-          chmod 0700 ~/.gnupg
-          cat << EOF > ~/.gnupg/gpg.conf
-          use-agent
-          pinentry-mode loopback
-          EOF
-          echo "$GPG_PRIVATE_KEY" | gpg --batch --allow-secret-key-import --import
-          gpg --keyid-format LONG --list-secret-keys
-          cat << EOF > ~/.gnupg/gpg-agent.conf
-          default-cache-ttl 7200
-          max-cache-ttl 31536000
-          allow-loopback-pinentry
-          allow-preset-passphrase
-          EOF
-          echo RELOADAGENT | gpg-connect-agent
-          printf '%s' "$GPG_PASSPHRASE" > /tmp/.gpg_passphrase
+        uses: crazy-max/ghaction-import-gpg@v3
+        with:
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Create release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GPG_FINGERPRINT: ${{ secrets.GPG_FINGERPRINT }}
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+          GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint  }}
         run: |
           goreleaser release --parallelism 2 --rm-dist --timeout 1h --release-notes .release_info.md
