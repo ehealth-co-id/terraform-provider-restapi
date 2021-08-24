@@ -12,6 +12,7 @@ import (
 )
 
 type apiObjectOpts struct {
+	url        		string	
 	path          string
 	getPath       string
 	postPath      string
@@ -33,6 +34,7 @@ type apiObjectOpts struct {
 /*APIObject is the state holding struct for a restapi_object resource*/
 type APIObject struct {
 	apiClient     *APIClient
+	url						string
 	getPath       string
 	postPath      string
 	putPath       string
@@ -82,6 +84,10 @@ func NewAPIObject(iClient *APIClient, opts *apiObjectOpts) (*APIObject, error) {
 		opts.destroyMethod = iClient.destroyMethod
 	}
 
+	if opts.url == "" {
+		opts.url = opts.url
+	}
+
 	if opts.postPath == "" {
 		opts.postPath = opts.path
 	}
@@ -100,6 +106,7 @@ func NewAPIObject(iClient *APIClient, opts *apiObjectOpts) (*APIObject, error) {
 
 	obj := APIObject{
 		apiClient:     iClient,
+		url:					 opts.url,
 		getPath:       opts.getPath,
 		postPath:      opts.postPath,
 		putPath:       opts.putPath,
@@ -157,6 +164,7 @@ func NewAPIObject(iClient *APIClient, opts *apiObjectOpts) (*APIObject, error) {
 func (obj *APIObject) toString() string {
 	var buffer bytes.Buffer
 	buffer.WriteString(fmt.Sprintf("id: %s\n", obj.id))
+	buffer.WriteString(fmt.Sprintf("url: %s\n", obj.url))
 	buffer.WriteString(fmt.Sprintf("get_path: %s\n", obj.getPath))
 	buffer.WriteString(fmt.Sprintf("post_path: %s\n", obj.postPath))
 	buffer.WriteString(fmt.Sprintf("put_path: %s\n", obj.putPath))
@@ -235,6 +243,8 @@ func (obj *APIObject) createObject() error {
 
 	b, _ := json.Marshal(obj.data)
 
+	url := obj.url
+
 	postPath := obj.postPath
 	if obj.queryString != "" {
 		if obj.debug {
@@ -243,7 +253,7 @@ func (obj *APIObject) createObject() error {
 		postPath = fmt.Sprintf("%s?%s", obj.postPath, obj.queryString)
 	}
 
-	resultString, err := obj.apiClient.sendRequest(obj.createMethod, strings.Replace(postPath, "{id}", obj.id, -1), string(b))
+	resultString, err := obj.apiClient.sendRequest(obj.createMethod, strings.Replace(postPath, "{id}", obj.id, -1), string(b), url)
 	if err != nil {
 		return err
 	}
@@ -275,6 +285,8 @@ func (obj *APIObject) readObject() error {
 		return fmt.Errorf("cannot read an object unless the ID has been set")
 	}
 
+	url := obj.url
+
 	getPath := obj.getPath
 	if obj.queryString != "" {
 		if obj.debug {
@@ -283,7 +295,7 @@ func (obj *APIObject) readObject() error {
 		getPath = fmt.Sprintf("%s?%s", obj.getPath, obj.queryString)
 	}
 
-	resultString, err := obj.apiClient.sendRequest(obj.readMethod, strings.Replace(getPath, "{id}", obj.id, -1), "")
+	resultString, err := obj.apiClient.sendRequest(obj.readMethod, strings.Replace(getPath, "{id}", obj.id, -1), "", url)
 	if err != nil {
 		if strings.Contains(err.Error(), "Unexpected response code '404'") {
 			log.Printf("api_object.go: 404 error while refreshing state for '%s' at path '%s'. Removing from state.", obj.id, obj.getPath)
@@ -327,6 +339,8 @@ func (obj *APIObject) updateObject() error {
 
 	b, _ := json.Marshal(obj.data)
 
+	url := obj.url
+
 	putPath := obj.putPath
 	if obj.queryString != "" {
 		if obj.debug {
@@ -335,7 +349,7 @@ func (obj *APIObject) updateObject() error {
 		putPath = fmt.Sprintf("%s?%s", obj.putPath, obj.queryString)
 	}
 
-	resultString, err := obj.apiClient.sendRequest(obj.updateMethod, strings.Replace(putPath, "{id}", obj.id, -1), string(b))
+	resultString, err := obj.apiClient.sendRequest(obj.updateMethod, strings.Replace(putPath, "{id}", obj.id, -1), string(b), url)
 	if err != nil {
 		return err
 	}
@@ -360,6 +374,8 @@ func (obj *APIObject) deleteObject() error {
 		return nil
 	}
 
+	url := obj.url
+
 	deletePath := obj.deletePath
 	if obj.queryString != "" {
 		if obj.debug {
@@ -368,7 +384,7 @@ func (obj *APIObject) deleteObject() error {
 		deletePath = fmt.Sprintf("%s?%s", obj.deletePath, obj.queryString)
 	}
 
-	_, err := obj.apiClient.sendRequest(obj.destroyMethod, strings.Replace(deletePath, "{id}", obj.id, -1), "")
+	_, err := obj.apiClient.sendRequest(obj.destroyMethod, strings.Replace(deletePath, "{id}", obj.id, -1), "", url)
 	if err != nil {
 		return err
 	}
@@ -380,6 +396,8 @@ func (obj *APIObject) findObject(queryString string, searchKey string, searchVal
 	var objFound map[string]interface{}
 	var dataArray []interface{}
 	var ok bool
+
+	url := obj.url
 
 	/*
 	   Issue a GET to the base path and expect results to come back
@@ -395,7 +413,7 @@ func (obj *APIObject) findObject(queryString string, searchKey string, searchVal
 	if obj.debug {
 		log.Printf("api_object.go: Calling API on path '%s'", searchPath)
 	}
-	resultString, err := obj.apiClient.sendRequest(obj.apiClient.readMethod, searchPath, "")
+	resultString, err := obj.apiClient.sendRequest(obj.apiClient.readMethod, searchPath, "", url)
 	if err != nil {
 		return objFound, err
 	}

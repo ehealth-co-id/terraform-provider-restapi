@@ -11,6 +11,11 @@ func dataSourceRestAPI() *schema.Resource {
 		Read: dataSourceRestAPIRead,
 
 		Schema: map[string]*schema.Schema{
+			"url": {
+				Type:        schema.TypeString,
+				Required:    true,
+				Description: "URI of the REST API endpoint.",
+			},
 			"path": {
 				Type:        schema.TypeString,
 				Description: "The API path on top of the base URL set in the provider that represents objects of this type on the API server.",
@@ -77,6 +82,7 @@ func dataSourceRestAPI() *schema.Resource {
 }
 
 func dataSourceRestAPIRead(d *schema.ResourceData, meta interface{}) error {
+	url := d.Get("url").(string)
 	path := d.Get("path").(string)
 	searchPath := d.Get("search_path").(string)
 	queryString := d.Get("query_string").(string)
@@ -101,6 +107,7 @@ func dataSourceRestAPIRead(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	opts := &apiObjectOpts{
+		url: 				 url,
 		path:        path,
 		searchPath:  searchPath,
 		debug:       debug,

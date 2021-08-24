@@ -191,8 +191,8 @@ func (client *APIClient) toString() string {
 
 /* Helper function that handles sending/receiving and handling
    of HTTP data in and out. */
-func (client *APIClient) sendRequest(method string, path string, data string) (string, error) {
-	fullURI := client.uri + path
+func (client *APIClient) sendRequest(method string, path string, data string, url string) (string, error) {
+	fullURI := url + path
 	var req *http.Request
 	var err error
 

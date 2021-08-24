@@ -27,6 +27,11 @@ func resourceRestAPI() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
+			"url": {
+				Type:        schema.TypeString,
+				Required:    true,
+				Description: "URI of the REST API endpoint.",
+			},
 			"path": {
 				Type:        schema.TypeString,
 				Description: "The API path on top of the base URL set in the provider that represents objects of this type on the API server.",
@@ -329,6 +334,7 @@ func makeAPIObject(d *schema.ResourceData, meta interface{}) (*APIObject, error)
 
 func buildAPIObjectOpts(d *schema.ResourceData) (*apiObjectOpts, error) {
 	opts := &apiObjectOpts{
+		url: d.Get("url").(string),
 		path: d.Get("path").(string),
 	}
 

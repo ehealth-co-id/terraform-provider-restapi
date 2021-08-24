@@ -246,7 +246,7 @@ func configureProvider(d *schema.ResourceData) (interface{}, error) {
 
 	if v, ok := d.GetOk("test_path"); ok {
 		testPath := v.(string)
-		_, err := client.sendRequest(client.readMethod, testPath, "")
+		_, err := client.sendRequest(client.readMethod, testPath, "", "")
 		if err != nil {
 			return client, fmt.Errorf("a test request to %v after setting up the provider did not return an OK response - is your configuration correct? %v", testPath, err)
 		}
