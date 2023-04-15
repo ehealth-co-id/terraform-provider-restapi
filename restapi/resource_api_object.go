@@ -16,11 +16,12 @@ func resourceRestAPI() *schema.Resource {
 	isDataSensitive, _ := strconv.ParseBool(GetEnvOrDefault("API_DATA_IS_SENSITIVE", "false"))
 
 	return &schema.Resource{
-		Create: resourceRestAPICreate,
-		Read:   resourceRestAPIRead,
-		Update: resourceRestAPIUpdate,
-		Delete: resourceRestAPIDelete,
-		Exists: resourceRestAPIExists,
+		Create:        resourceRestAPICreate,
+		Read:          resourceRestAPIRead,
+		Update:        resourceRestAPIUpdate,
+		Delete:        resourceRestAPIDelete,
+		Exists:        resourceRestAPIExists,
+		CustomizeDiff: resourceRestAPICustomizeDiff,
 
 		Importer: &schema.ResourceImporter{
 			State: resourceRestAPIImport,
@@ -152,10 +153,12 @@ func resourceRestAPI() *schema.Resource {
 	}
 }
 
-/* Since there is nothing in the ResourceData structure other
-   than the "id" passed on the command line, we have to use an opinionated
-   view of the API paths to figure out how to read that object
-   from the API */
+/*
+Since there is nothing in the ResourceData structure other
+than the "id" passed on the command line, we have to use an opinionated
+view of the API paths to figure out how to read that object
+from the API
+*/
 func resourceRestAPIImport(d *schema.ResourceData, meta interface{}) (imported []*schema.ResourceData, err error) {
 	input := d.Id()
 
@@ -308,10 +311,12 @@ func resourceRestAPIExists(d *schema.ResourceData, meta interface{}) (exists boo
 	return exists, err
 }
 
-/* Simple helper routine to build an api_object struct
-   for the various calls terraform will use. Unfortunately,
-   terraform cannot just reuse objects, so each CRUD operation
-   results in a new object created */
+/*
+Simple helper routine to build an api_object struct
+for the various calls terraform will use. Unfortunately,
+terraform cannot just reuse objects, so each CRUD operation
+results in a new object created
+*/
 func makeAPIObject(d *schema.ResourceData, meta interface{}) (*APIObject, error) {
 	opts, err := buildAPIObjectOpts(d)
 	if err != nil {
@@ -334,7 +339,7 @@ func makeAPIObject(d *schema.ResourceData, meta interface{}) (*APIObject, error)
 
 func buildAPIObjectOpts(d *schema.ResourceData) (*apiObjectOpts, error) {
 	opts := &apiObjectOpts{
-		url: d.Get("url").(string),
+		url:  d.Get("url").(string),
 		path: d.Get("path").(string),
 	}
 
@@ -397,4 +402,48 @@ func expandReadSearch(v map[string]interface{}) (readSearch map[string]string) {
 	}
 
 	return
+}
+
+func getIdFromData(data string, idAttribute string) (string, error) {
+	obj := make(map[string]interface{})
+	err := json.Unmarshal([]byte(data), &obj)
+	if err != nil {
+		return "", err
+	}
+	return obj[idAttribute].(string), nil
+}
+
+func resourceRestAPICustomizeDiff(diff *schema.ResourceDiff, meta interface{}) error {
+	// ForceNew if id change
+	if diff.HasChange("data") {
+		oldData, newData := diff.GetChange("data")
+		idAttributeOption := diff.Get("idAttribute")
+
+		idAttribute := "id"
+		if idAttributeOption != nil {
+			idAttribute = idAttributeOption.(string)
+		}
+
+		if oldData != "" && newData != "" {
+			log.Printf("oldData: %s", oldData.(string))
+			oldId, err := getIdFromData(oldData.(string), idAttribute)
+			if err != nil {
+				return err
+			}
+			log.Printf("newData: %s", newData.(string))
+			newId, err := getIdFromData(newData.(string), idAttribute)
+			if err != nil {
+				return err
+			}
+			if oldId != newId {
+				err := diff.ForceNew("data")
+				if err != nil {
+					return err
+				}
+			}
+		}
+
+	}
+
+	return nil
 }
