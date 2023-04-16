@@ -417,7 +417,7 @@ func resourceRestAPICustomizeDiff(diff *schema.ResourceDiff, meta interface{}) e
 	// ForceNew if id change
 	if diff.HasChange("data") {
 		oldData, newData := diff.GetChange("data")
-		idAttributeOption := diff.Get("idAttribute")
+		idAttributeOption := diff.Get("id_attribute")
 
 		idAttribute := "id"
 		if idAttributeOption != nil {
