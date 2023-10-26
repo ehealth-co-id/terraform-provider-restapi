@@ -88,7 +88,7 @@ Pull requests are always welcome! Please be sure the following things are taken 
 To make development easy, you can use the Docker image [druggeri/tdk](https://hub.docker.com/r/druggeri/tdk) as a development environment:
 ```
 docker run -it --name tdk --rm -v "$HOME/go":/root/go druggeri/tdk
-go get github.com/Mastercard/terraform-provider-restapi
-cd ~/go/src/github.com/Mastercard/terraform-provider-restapi
+go get github.com/ehealth-co-id/terraform-provider-restapi
+cd ~/go/src/github.com/ehealth-co-id/terraform-provider-restapi
 #Hack hack hack
 ```
