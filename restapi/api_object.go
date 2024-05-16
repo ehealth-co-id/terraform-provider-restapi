@@ -12,7 +12,7 @@ import (
 )
 
 type apiObjectOpts struct {
-	url        		string	
+	url           string
 	path          string
 	getPath       string
 	postPath      string
@@ -34,7 +34,7 @@ type apiObjectOpts struct {
 /*APIObject is the state holding struct for a restapi_object resource*/
 type APIObject struct {
 	apiClient     *APIClient
-	url						string
+	url           string
 	getPath       string
 	postPath      string
 	putPath       string
@@ -56,7 +56,7 @@ type APIObject struct {
 	apiResponse string
 }
 
-//NewAPIObject makes an APIobject to manage a RESTful object in an API
+// NewAPIObject makes an APIobject to manage a RESTful object in an API
 func NewAPIObject(iClient *APIClient, opts *apiObjectOpts) (*APIObject, error) {
 	if opts.debug {
 		log.Printf("api_object.go: Constructing debug api_object\n")
@@ -106,7 +106,7 @@ func NewAPIObject(iClient *APIClient, opts *apiObjectOpts) (*APIObject, error) {
 
 	obj := APIObject{
 		apiClient:     iClient,
-		url:					 opts.url,
+		url:           opts.url,
 		getPath:       opts.getPath,
 		postPath:      opts.postPath,
 		putPath:       opts.putPath,
@@ -181,9 +181,12 @@ func (obj *APIObject) toString() string {
 	return buffer.String()
 }
 
-/* Centralized function to ensure that our data as managed by
-   the api_object is updated with data that has come back from
-   the API */
+/*
+Centralized function to ensure that our data as managed by
+
+	the api_object is updated with data that has come back from
+	the API
+*/
 func (obj *APIObject) updateState(state string) error {
 	if obj.debug {
 		log.Printf("api_object.go: Updating API object state to '%s'\n", state)
@@ -297,8 +300,8 @@ func (obj *APIObject) readObject() error {
 
 	resultString, err := obj.apiClient.sendRequest(obj.readMethod, strings.Replace(getPath, "{id}", obj.id, -1), "", url)
 	if err != nil {
-		if strings.Contains(err.Error(), "unexpected response code '404'") {
-			log.Printf("api_object.go: 404 error while refreshing state for '%s' at path '%s'. Removing from state.", obj.id, obj.getPath)
+		if strings.Contains(err.Error(), "unexpected response code '404'") || strings.Contains(err.Error(), "unexpected response code '410'") {
+			log.Printf("api_object.go: Resource not found while refreshing state for '%s' at path '%s'. Removing from state.", obj.id, obj.getPath)
 			obj.id = ""
 			return nil
 		}
