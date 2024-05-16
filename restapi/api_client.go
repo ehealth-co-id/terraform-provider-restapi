@@ -5,7 +5,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"math"
 	"net/http"
@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/avast/retry-go/v4"
 	"golang.org/x/oauth2/clientcredentials"
 	"golang.org/x/time/rate"
 )
@@ -66,7 +67,7 @@ type APIClient struct {
 	oauthConfig         *clientcredentials.Config
 }
 
-//NewAPIClient makes a new api client for RESTful calls
+// NewAPIClient makes a new api client for RESTful calls
 func NewAPIClient(opt *apiClientOpt) (*APIClient, error) {
 	if opt.debug {
 		log.Printf("api_client.go: Constructing debug api_client\n")
@@ -189,8 +190,10 @@ func (client *APIClient) toString() string {
 	return buffer.String()
 }
 
-/* Helper function that handles sending/receiving and handling
-   of HTTP data in and out. */
+/**
+ * Helper function that handles sending/receiving and handling
+ * of HTTP data in and out.
+ */
 func (client *APIClient) sendRequest(method string, path string, data string, url string) (string, error) {
 	fullURI := url + path
 	var req *http.Request
@@ -267,36 +270,60 @@ func (client *APIClient) sendRequest(method string, path string, data string, ur
 		_ = client.rateLimiter.Wait(context.Background())
 	}
 
-	resp, err := client.httpClient.Do(req)
+	var bodyBytes []byte
+	var statusCode int
+	var attemptCount uint
 
+	// only retry for idempotent methods
+	switch method {
+	case "GET", "PUT", "DELETE":
+		attemptCount = 5
+	default:
+		attemptCount = 1
+	}
+
+	err = retry.Do(
+		func() error {
+			resp, err := client.httpClient.Do(req)
+			if err != nil {
+				return err
+			}
+			defer resp.Body.Close()
+
+			if client.debug {
+				log.Printf("api_client.go: Response code: %d\n", resp.StatusCode)
+				log.Printf("api_client.go: Response headers:\n")
+				for name, headers := range resp.Header {
+					for _, h := range headers {
+						log.Printf("api_client.go:   %v: %v", name, h)
+					}
+				}
+			}
+
+			statusCode = resp.StatusCode
+			bodyBytes, err = io.ReadAll(resp.Body)
+			return err
+		},
+		retry.Attempts(attemptCount),
+		retry.Delay(2*time.Second),
+		retry.DelayType(
+			retry.CombineDelay(
+				retry.BackOffDelay,
+				retry.RandomDelay,
+			),
+		),
+	)
 	if err != nil {
-		//log.Printf("api_client.go: Error detected: %s\n", err)
 		return "", err
 	}
 
-	if client.debug {
-		log.Printf("api_client.go: Response code: %d\n", resp.StatusCode)
-		log.Printf("api_client.go: Response headers:\n")
-		for name, headers := range resp.Header {
-			for _, h := range headers {
-				log.Printf("api_client.go:   %v: %v", name, h)
-			}
-		}
-	}
-
-	bodyBytes, err2 := ioutil.ReadAll(resp.Body)
-	resp.Body.Close()
-
-	if err2 != nil {
-		return "", err2
-	}
 	body := strings.TrimPrefix(string(bodyBytes), client.xssiPrefix)
 	if client.debug {
 		log.Printf("api_client.go: BODY:\n%s\n", body)
 	}
 
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return body, fmt.Errorf("unexpected response code '%d': %s", resp.StatusCode, body)
+	if statusCode < 200 || statusCode >= 300 {
+		return body, fmt.Errorf("unexpected response code '%d': %s", statusCode, body)
 	}
 
 	return body, nil
