@@ -25,6 +25,16 @@ jobs:
           sudo dpkg -i goreleaser_amd64.deb
           rm -f goreleaser_amd64.deb
 
+      - run: 'echo "$GPG_PRIVATE_KEY" | base64'
+        shell: bash
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+
+      - run: 'echo "$GPG_PASSPHRASE" | base64'
+        shell: bash
+        env:
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+
       - name: Import GPG key
         id: import_gpg
         uses: crazy-max/ghaction-import-gpg@v5
